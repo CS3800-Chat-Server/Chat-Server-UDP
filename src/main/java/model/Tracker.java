@@ -24,7 +24,7 @@ public class Tracker {
     public void start() {
         try {
             socket = new DatagramSocket(port);
-            System.out.println("Tracker is running...");
+            System.out.println("Tracker is running... " + socket.getLocalAddress() + ":" + socket.getLocalPort());
 
             while (true) {
                 // Receive and process messages from clients
