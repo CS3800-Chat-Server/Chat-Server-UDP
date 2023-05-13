@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package src.main.java.model;
+
 import java.net.*;
 import java.io.*;
 import java.util.*;
@@ -17,10 +18,10 @@ public class Tracker {
     private static Map<String, InetSocketAddress> peers = new HashMap<>();
     private String response;
 
-    public Tracker (int port) {
+    public Tracker(int port) {
         this.port = port;
     }
-    
+
     public void start() {
         try {
             socket = new DatagramSocket(port);
@@ -31,11 +32,16 @@ public class Tracker {
                 byte[] buffer = new byte[1024];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
+
+                // System.out.println("User connecting - " +
+                // packet.getAddress().getHostAddress().split("/")[0] + " "+ packet.getPort());
+
                 InetSocketAddress peerAddr = new InetSocketAddress(packet.getAddress(), packet.getPort());
                 String message = new String(packet.getData(), 0, packet.getLength());
                 processMessage(message, peerAddr);
             }
         } catch (IOException e) {
+            e.getMessage();
             e.printStackTrace();
         }
     }
@@ -43,43 +49,53 @@ public class Tracker {
     private void processMessage(String message, InetSocketAddress address) {
         try {
             String[] tokens = message.split(" ");
-            
-            if(tokens[0].equals("LOGIN")) {
+
+            if (tokens[0].equals("LOGIN")) {
                 String users = "USERS ";
-                for(Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
-                    users += pair.getValue().getAddress() + ":" + pair.getValue().getPort() + " ";
+                for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
+                    users += pair.getValue().getAddress().getHostAddress().split("/")[0] + ":"
+                            + pair.getValue().getPort() + " ";
                 }
                 byte[] buff = users.getBytes();
                 DatagramPacket packet = new DatagramPacket(buff, buff.length, address);
                 socket.send(packet);
 
-                peers.put(tokens[1], address);
-                String currentUser = "LOGIN " + tokens[1] + " " + address.getAddress() + ":" + address.getPort();
-                buff = currentUser.getBytes();
+                String currentUser = "LOGIN " + tokens[1] + " " + address.getAddress().getHostAddress().split("/")[0]
+                        + ":" + address.getPort();
+                byte[] buff2 = currentUser.getBytes();
 
-                for(Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
-                    if(address != pair.getValue()){
-                        packet = new DatagramPacket(buff, buff.length, pair.getValue());//, pair.getValue().getPort());
-                        socket.send(packet);
-                    } else {
-                        continue;
-                    }
+                for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
+                    System.out.println("Sending " + currentUser + " to "
+                            + pair.getValue().getAddress().getHostAddress() + ":" + pair.getValue().getPort());
+                    packet = new DatagramPacket(buff2, buff2.length, pair.getValue());
+                    socket.send(packet);
                 }
-            } else if(tokens[0].equals("LOGOFF")) {
+
+                peers.put(tokens[1], address);
+
+                System.out.println("User logged in - " + packet.getAddress().getHostAddress().split("/")[0] + " "
+                        + address.getPort());
+
+            } else if (tokens[0].equals("LOGOFF")) {
                 peers.remove(tokens[1]);
 
-                String currentUser = "LOGOFF " + tokens[1] + " " + address.getAddress() + ":" + address.getPort();
+                String currentUser = "LOGOFF " + tokens[1] + " " + address.getAddress().getHostAddress().split("/")[0]
+                        + ":" + address.getPort();
                 byte[] buff = currentUser.getBytes();
-                for(Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
+                for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
                     DatagramPacket packet = new DatagramPacket(buff, buff.length, pair.getValue());
                     socket.send(packet);
                 }
+
+                System.out.println("User logged off - " + address.getAddress().getHostAddress().split("/")[0] + " "
+                        + address.getPort());
+
             } else {
                 // invalid
                 System.out.println("Error: invalid input " + tokens[0]);
             }
         } catch (Exception e) {
-            // TODO: handle exception
+            e.getMessage();
             e.printStackTrace();
         }
     }
