@@ -216,7 +216,8 @@ public class ChatClient {
                             System.err.println("Attempted to add duplicate peer.");
                         } else {
                             activeClients.put(address, clientPort);
-                            System.out.println("Added client: " + address + ":" + clientPort);
+                            clientController.handleMessageReceived(name + " joined the chat.");
+                            //System.out.println("Added client: " + address + ":" + clientPort);
                         }
 
                     }
@@ -230,13 +231,15 @@ public class ChatClient {
                             System.err.println("Attempted to remove duplicate peer not in active clients.");
                         } else {
                             activeClients.remove(address);
-                            System.out.println("Removed client: " + address);
+                            clientController.handleMessageReceived(name + " left the chat.");
+                            //System.out.println("Removed client: " + address);
                         }
                     }
 
                     // display message from other peers
                     else {
-                        System.out.println(name + ": " + body);
+                        clientController.handleMessageReceived(name + ": " + body);
+                        //System.out.println(name + ": " + body);
                     }
 
                     // reset the buffer and packet
