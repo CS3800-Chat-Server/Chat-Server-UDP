@@ -4,10 +4,26 @@
  */
 package src.main.java.model;
 
+import src.main.java.controller.*;
+
+import java.net.*;
+
 /**
  *
  * @author Squee183
  */
 public class ChatClient {
-    
+
+    private Controller clientController;
+
+    private String username;
+    private DatagramSocket socket;
+
+    public ChatClient(Controller clientController) {
+        this.clientController = clientController;
+    }
+
+    public void run() {
+
+    }
 }

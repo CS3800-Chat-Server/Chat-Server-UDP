@@ -29,7 +29,6 @@ public class Controller {
         } catch (Exception e) {
             viewLogin.displayLoginError();
         }
-
     }
 
     public void toggleLoginVisible() {
