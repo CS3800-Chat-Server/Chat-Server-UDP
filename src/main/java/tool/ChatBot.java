@@ -41,7 +41,7 @@ public class ChatBot implements Runnable {
 
     @Override
     public void run() {
-        username = "Bot " + id;
+        username = "Bot" + id;
         String loginString = "LOGIN " + username;
 
         byte[] buff = loginString.getBytes();
