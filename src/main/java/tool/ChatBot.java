@@ -78,7 +78,7 @@ public class ChatBot implements Runnable {
                 buff = new byte[1024];
                 DatagramPacket messagePacket = new DatagramPacket(buff, buff.length);
 
-                System.out.println(username + " waiting for message");
+                //System.out.println(username + " waiting for message");
                 try {
                     socket.receive(messagePacket);
                 } catch (SocketTimeoutException e) {
@@ -89,12 +89,12 @@ public class ChatBot implements Runnable {
                 String message = new String(messagePacket.getData(), 0, messagePacket.getLength());
                 String[] messageTokens = message.split(" ");
 
-                System.out.println(username + " received message\t" + message);
+                //System.out.println(username + " received message\t" + message);
 
                 if (messageTokens[0].equals("MESSAGE")) {
                     System.out.println(message);
                 } else if (messageTokens[0].equals("LOGIN")) {
-                    System.out.println(username + " adding new client to map");
+                    //System.out.println(username + " adding new client to map");
                     String[] userInfo2 = messageTokens[2].split(":");
                     peers.put(userInfo2[0], Integer.parseInt(userInfo2[1]));
                 } else if (messageTokens[0].equals("LOGOFF")) {
@@ -178,7 +178,7 @@ public class ChatBot implements Runnable {
         ArrayList<ChatBot> userArray = new ArrayList<>();
 
         for (int i = 0; i < numClients; i++) {
-            ChatBot bot = new ChatBot(ip, port, i);
+            ChatBot bot = new ChatBot(ip, port, i+2);
             userArray.add(bot);
             new Thread(bot).start();
             try {

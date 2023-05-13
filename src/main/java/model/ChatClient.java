@@ -114,6 +114,7 @@ public class ChatClient {
     }
 
     public void tryLoginInfo(String username, String ip, Integer port) throws Exception {
+        System.out.println("Trying to login");
         InetAddress clientAddress = InetAddress.getLocalHost();
         trackerAddress = new InetSocketAddress(ip, port);
         try {
@@ -123,17 +124,20 @@ public class ChatClient {
                     trackerAddress);
             socket.send(logonPacket);
         } catch (IOException e) {
+            System.out.println("Error logging into server. ");
             throw e;
         }
 
+        System.out.println("Receiving user list");
         byte[] buffer = new byte[1024];
         DatagramPacket loginResponsePacket = new DatagramPacket(buffer, buffer.length);
         socket.receive(loginResponsePacket);
         String loginResponseMessage = new String(loginResponsePacket.getData(), 0, loginResponsePacket.getLength());
+        String[] parts = loginResponseMessage.split(" ");
 
-        if (loginResponseMessage.startsWith("USERS")) {
-            String[] parts = loginResponseMessage.split(" ");
-            for (int i = 0; i < parts.length; i++) {
+        if (parts[0].equals("USERS")) {
+            for (int i = 1; i < parts.length; i++) {
+                System.out.println("Parts[" + i + "] = " + parts[i] );
                 String[] peersInfo = parts[i].split(":");
                 String clientAddressString = peersInfo[0];
                 int clientPort = Integer.parseInt(peersInfo[i]);
@@ -145,7 +149,7 @@ public class ChatClient {
                 }
             }
         } else {
-            System.err.println("Login user response error. ");
+            System.out.println("Login user response error. ");
             throw new Exception();
         }
 
