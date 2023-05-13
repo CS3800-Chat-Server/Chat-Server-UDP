@@ -239,7 +239,7 @@ public class ChatClient {
                     // display message from other peers
                     else if (header.equals("MESSAGE")) {
                         clientController.handleMessageReceived(name + ": " + body);
-                        //System.out.println(name + ": " + body);
+                        System.out.println(name + ": " + body);
                     }
 
                     // reset the buffer and packet
