@@ -31,16 +31,6 @@ public class ChatClient {
     private volatile Boolean isRunning = true;
     private volatile Boolean isLogginIn = true;
 
-    public ChatClient(Controller clientController, String username, InetAddress trackerAddress, int trackerPort)
-            throws SocketException {
-        this.clientController = clientController;
-        // this.username = username;
-        // this.trackerAddress = trackerAddress;
-        // this.trackerPort = trackerPort;
-        // this.socket = new DatagramSocket();
-        // activeClients = new HashMap<>();
-    }
-
     public ChatClient(Controller clientController) {
         this.clientController = clientController;
     }
@@ -52,39 +42,6 @@ public class ChatClient {
             while (this.isLogginIn) {
                 // Wait for login from GUI
             }
-
-            // send login message
-            // InetAddress clientAddress = InetAddress.getLocalHost();
-            // String loginMessage = String.format("LOGIN %s", username);
-            // DatagramPacket logonPacket = new DatagramPacket(loginMessage.getBytes(),
-            // loginMessage.getBytes().length, trackerAddress, trackerPort);
-            // socket.send(logonPacket);
-
-            // byte[] buffer = new byte[1024];
-            // DatagramPacket loginResponsePacket = new DatagramPacket(buffer,
-            // buffer.length);
-            // socket.receive(loginResponsePacket);
-            // String loginResponseMessage = new String(loginResponsePacket.getData(), 0,
-            // loginResponsePacket.getLength());
-
-            // receive login response, store peers in activeClients
-            // if (loginResponseMessage.startsWith("USERS")) {
-            // String[] parts = loginResponseMessage.split(" ");
-            // for (int i = 0; i < parts.length; i++) {
-            // String[] peersInfo = parts[i].split(":");
-            // String clientAddressString = peersInfo[0];
-            // int clientPort = Integer.parseInt(peersInfo[i]);
-            // if (!clientAddressString.equals(clientAddress.getHostAddress())
-            // || clientPort != socket.getLocalPort()) {
-            // InetAddress address = InetAddress.getByName(clientAddressString);
-            // activeClients.put(address, clientPort);
-            // System.out.println(i + " Adding client: " + address + ":" + clientPort);
-            // }
-            // }
-            // } else {
-            // System.err.println("Login user response error. ");
-            // System.exit(-1);
-            // }
 
             this.clientController.closeLogin();
             this.clientController.toggleClientVisible();
@@ -170,6 +127,7 @@ public class ChatClient {
                 e.printStackTrace();
             }
 
+            isRunning = false;
             return;
         }
 
@@ -183,10 +141,11 @@ public class ChatClient {
             try {
                 socket.send(sendPacket);
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
+
+        clientController.handleMessageReceived(username + " " + timestamp + " " + message);
     }
 
     private class ListenerThread implements Runnable {
