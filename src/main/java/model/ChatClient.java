@@ -237,7 +237,7 @@ public class ChatClient {
                     }
 
                     // display message from other peers
-                    else {
+                    else if (header.equals("MESSAGE")) {
                         clientController.handleMessageReceived(name + ": " + body);
                         //System.out.println(name + ": " + body);
                     }
