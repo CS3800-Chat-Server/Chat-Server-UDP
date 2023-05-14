@@ -25,7 +25,7 @@ public class ChatClient {
     private DatagramSocket socket;
     private InetSocketAddress trackerAddress;
     // private int trackerPort;
-    private Map<InetAddress, Integer> activeClients = new HashMap<>();
+    private Map<InetSocketAddress, Integer> activeClients = new HashMap<>();
     private volatile Boolean isRunning = true;
     private volatile Boolean isLogginIn = true;
 
@@ -94,7 +94,7 @@ public class ChatClient {
                 int clientPort = Integer.parseInt(peersInfo[i]);
                 if (!clientAddressString.equals(clientAddress.getHostAddress())
                         || clientPort != socket.getLocalPort()) {
-                    InetAddress address = InetAddress.getByName(clientAddressString);
+                    InetSocketAddress address = new InetSocketAddress(clientAddressString, clientPort);
                     activeClients.put(address, clientPort);
                 }
             }
@@ -125,10 +125,9 @@ public class ChatClient {
             // send message to peers in activeClients
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
             String formattedMessage = "MESSAGE " + username + " " + timestamp + " " + message;
-            for (InetAddress address : activeClients.keySet()) {
-                int port = activeClients.get(address);
+            for (InetSocketAddress address : activeClients.keySet()) {
                 DatagramPacket sendPacket = new DatagramPacket(formattedMessage.getBytes(),
-                        formattedMessage.getBytes().length, address, port);
+                        formattedMessage.getBytes().length, address);
                 try {
                     socket.send(sendPacket);
                 } catch (IOException e) {
@@ -162,7 +161,7 @@ public class ChatClient {
                         String[] addressParts = body.split(":");
                         String clientAddressStr = addressParts[0];
                         int clientPort = Integer.parseInt(addressParts[1]);
-                        InetAddress address = InetAddress.getByName(clientAddressStr);
+                        InetSocketAddress address = new InetSocketAddress(clientAddressStr, clientPort);
 
                         if (activeClients.containsKey(address)) {
                             System.err.println("Attempted to add duplicate peer.");
@@ -177,7 +176,8 @@ public class ChatClient {
                     else if (header.equals("LOGOFF")) {
                         String[] addressParts = body.split(":");
                         String clientAddressStr = addressParts[0];
-                        InetAddress address = InetAddress.getByName(clientAddressStr);
+                        Integer clientPort = Integer.parseInt(addressParts[1]);
+                        InetSocketAddress address = new InetSocketAddress(clientAddressStr, clientPort);
                         if (!activeClients.containsKey(address)) {
                             System.err.println("Attempted to remove duplicate peer not in active clients.");
                         } else {
