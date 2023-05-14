@@ -35,7 +35,9 @@ public class Tracker {
 
                 InetSocketAddress peerAddr = new InetSocketAddress(packet.getAddress(), packet.getPort());
                 String message = new String(packet.getData(), 0, packet.getLength());
-                processMessage(message, peerAddr);
+
+                messageProcessor messageProc = new messageProcessor(message, peerAddr);
+                new Thread(messageProc).start();
             }
         } catch (IOException e) {
             e.getMessage();
@@ -43,55 +45,68 @@ public class Tracker {
         }
     }
 
-    private void processMessage(String message, InetSocketAddress address) {
-        try {
-            String[] tokens = message.split(" ");
+    private class messageProcessor implements Runnable {
+        String message;
+        InetSocketAddress address;
 
-            if (tokens[0].equals("LOGIN")) {
-                String users = "USERS ";
-                for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
-                    users += pair.getValue().getAddress().getHostAddress().split("/")[0] + ":"
-                            + pair.getValue().getPort() + " ";
-                }
-                byte[] buff = users.getBytes();
-                DatagramPacket packet = new DatagramPacket(buff, buff.length, address);
-                socket.send(packet);
+        public messageProcessor(String message, InetSocketAddress address) {
+            this.message = message;
+            this.address = address;
+        }
 
-                String currentUser = "LOGIN " + tokens[1] + " " + address.getAddress().getHostAddress().split("/")[0]
-                        + ":" + address.getPort();
-                byte[] buff2 = currentUser.getBytes();
+        @Override
+        public void run() {
+            try {
+                String[] tokens = message.split(" ");
 
-                for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
-                    packet = new DatagramPacket(buff2, buff2.length, pair.getValue());
+                if (tokens[0].equals("LOGIN")) {
+                    String users = "USERS ";
+                    for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
+                        users += pair.getValue().getAddress().getHostAddress().split("/")[0] + ":"
+                                + pair.getValue().getPort() + " ";
+                    }
+                    byte[] buff = users.getBytes();
+                    DatagramPacket packet = new DatagramPacket(buff, buff.length, address);
                     socket.send(packet);
+
+                    String currentUser = "LOGIN " + tokens[1] + " "
+                            + address.getAddress().getHostAddress().split("/")[0]
+                            + ":" + address.getPort();
+                    byte[] buff2 = currentUser.getBytes();
+
+                    for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
+                        packet = new DatagramPacket(buff2, buff2.length, pair.getValue());
+                        socket.send(packet);
+                    }
+
+                    peers.put(tokens[1], address);
+
+                    System.out.println("User logged in - " + packet.getAddress().getHostAddress().split("/")[0] + " "
+                            + address.getPort());
+
+                } else if (tokens[0].equals("LOGOFF")) {
+                    peers.remove(tokens[1]);
+
+                    String currentUser = "LOGOFF " + tokens[1] + " "
+                            + address.getAddress().getHostAddress().split("/")[0]
+                            + ":" + address.getPort();
+                    byte[] buff = currentUser.getBytes();
+                    for (ConcurrentHashMap.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
+                        DatagramPacket packet = new DatagramPacket(buff, buff.length, pair.getValue());
+                        socket.send(packet);
+                    }
+
+                    System.out.println("User logged off - " + address.getAddress().getHostAddress().split("/")[0] + " "
+                            + address.getPort());
+
+                } else {
+                    // invalid
+                    System.out.println("Error: invalid input " + tokens[0]);
                 }
-
-                peers.put(tokens[1], address);
-
-                System.out.println("User logged in - " + packet.getAddress().getHostAddress().split("/")[0] + " "
-                        + address.getPort());
-
-            } else if (tokens[0].equals("LOGOFF")) {
-                peers.remove(tokens[1]);
-
-                String currentUser = "LOGOFF " + tokens[1] + " " + address.getAddress().getHostAddress().split("/")[0]
-                        + ":" + address.getPort();
-                byte[] buff = currentUser.getBytes();
-                for (ConcurrentHashMap.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
-                    DatagramPacket packet = new DatagramPacket(buff, buff.length, pair.getValue());
-                    socket.send(packet);
-                }
-
-                System.out.println("User logged off - " + address.getAddress().getHostAddress().split("/")[0] + " "
-                        + address.getPort());
-
-            } else {
-                // invalid
-                System.out.println("Error: invalid input " + tokens[0]);
+            } catch (Exception e) {
+                e.getMessage();
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.getMessage();
-            e.printStackTrace();
         }
     }
 
