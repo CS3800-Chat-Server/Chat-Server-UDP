@@ -10,8 +10,7 @@ import java.io.IOException;
 import java.net.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -24,8 +23,7 @@ public class ChatClient {
     private String username;
     private DatagramSocket socket;
     private InetSocketAddress trackerAddress;
-    // private int trackerPort;
-    private Map<InetSocketAddress, Integer> activeClients = new HashMap<>();
+    private ConcurrentHashMap<InetSocketAddress, Integer> activeClients = new ConcurrentHashMap<>();
     private volatile Boolean isRunning = true;
     private volatile Boolean isLogginIn = true;
 
