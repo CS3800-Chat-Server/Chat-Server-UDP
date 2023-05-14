@@ -134,7 +134,7 @@ public class ChatClient {
                 }
             }
 
-            clientController.handleMessageReceived(username + " " + timestamp + " " + message);
+            clientController.handleMessageReceived(timestamp + " " + username + ": " + message);
         }   
     }
 
@@ -149,10 +149,20 @@ public class ChatClient {
                     // receive packets
                     socket.receive(packet);
                     String message = new String(packet.getData(), 0, packet.getLength());
-                    String[] parts = message.split(" ", 3); // get header and body
+                    String[] parts = message.split(" ", 4); // get header and body
                     String header = parts[0];
-                    String name = parts[1];
-                    String body = parts[2];
+                    String name;
+                    String body;
+                    String timeStamp;
+                    if (header.equals("MESSAGE")) {
+                        name = parts[1];
+                        timeStamp = parts[2];
+                        body = parts[3];
+                    } else {
+                        timeStamp = "";
+                        name = parts[1];
+                        body = parts[2];
+                    }
 
                     // for login packets, add peer to activeClients
                     if (header.equals("LOGIN")) {
@@ -186,7 +196,7 @@ public class ChatClient {
 
                     // display message from other peers
                     else if (header.equals("MESSAGE")) {
-                        clientController.handleMessageReceived(name + ": " + body);
+                        clientController.handleMessageReceived(timeStamp + " " + name + ": " + body);
                     }
 
                     // reset the buffer and packet
