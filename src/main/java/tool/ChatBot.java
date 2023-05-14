@@ -10,9 +10,11 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -20,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * @authors Alex Rodriguez, Mohammed Ibrahim, Christopher Gomez, Gaia Dennision
  */
 public class ChatBot implements Runnable {
-    private static HashMap<String, Integer> peers = new HashMap<String, Integer>();
+    private static ConcurrentHashMap<InetSocketAddress, Integer> peers = new ConcurrentHashMap<InetSocketAddress, Integer>();
     private DatagramSocket socket;
     InetSocketAddress addr;
     private volatile boolean isRunning = true;
@@ -30,7 +32,8 @@ public class ChatBot implements Runnable {
     public ChatBot(String ip, int port, int id) {
         addr = new InetSocketAddress(ip, port);
         try {
-            this.socket = new DatagramSocket(277 + id);
+            this.socket = new DatagramSocket();
+            System.out.println("Bot" + id + " at " + addr.getAddress().getHostAddress() + ":" + addr.getPort());
             socket.setSoTimeout(2000);
             this.id = id;
         } catch (SocketException e) {
@@ -48,28 +51,23 @@ public class ChatBot implements Runnable {
         DatagramPacket loginPacket = new DatagramPacket(buff, buff.length, addr);
 
         try {
-            System.out.println("Loggin in " + username);
             socket.send(loginPacket);
 
             buff = new byte[1024];
             DatagramPacket usersPacket = new DatagramPacket(buff, buff.length);
 
-            System.out.println(username + " waiting for user list");
             socket.receive(usersPacket);
 
             String userList = new String(usersPacket.getData(), 0, usersPacket.getLength());
             String[] tokens = userList.split(" ");
 
-            System.out.println(username + " received user list : " + userList);
-
             for (String s : tokens) {
                 if (!s.equals("USERS")) {
                     String[] userInfo = s.split(":");
-                    peers.put(userInfo[0].split("/")[0], Integer.parseInt(userInfo[1]));
+                    InetSocketAddress addr = new InetSocketAddress(userInfo[0].split("/")[0], Integer.parseInt(userInfo[1]));
+                    peers.put(addr, Integer.parseInt(userInfo[1]));
                 }
             }
-
-            System.out.println(username + " logged in");
 
             BotOutput botOutput = new BotOutput();
             new Thread(botOutput).start();
@@ -78,39 +76,31 @@ public class ChatBot implements Runnable {
                 buff = new byte[1024];
                 DatagramPacket messagePacket = new DatagramPacket(buff, buff.length);
 
-                //System.out.println(username + " waiting for message");
                 try {
                     socket.receive(messagePacket);
                 } catch (SocketTimeoutException e) {
-                    //System.out.println(username + " timed out waiting for message, moving on");
                     continue;
                 }                
 
                 String message = new String(messagePacket.getData(), 0, messagePacket.getLength());
                 String[] messageTokens = message.split(" ");
 
-                //System.out.println(username + " received message\t" + message);
-
                 if (messageTokens[0].equals("MESSAGE")) {
-                    System.out.println(message);
                 } else if (messageTokens[0].equals("LOGIN")) {
-                    //System.out.println(username + " adding new client to map");
                     String[] userInfo2 = messageTokens[2].split(":");
-                    peers.put(userInfo2[0], Integer.parseInt(userInfo2[1]));
+                    InetSocketAddress addr = new InetSocketAddress(userInfo2[0], Integer.parseInt(userInfo2[1]));
+                    peers.put(addr, Integer.parseInt(userInfo2[1]));
                 } else if (messageTokens[0].equals("LOGOFF")) {
                     String[] userInfo2 = messageTokens[2].split(":");
-                    peers.remove(userInfo2[0]);
+                    InetSocketAddress addr = new InetSocketAddress(userInfo2[0], Integer.parseInt(userInfo2[1]));
+                    peers.remove(addr);
                 }
             }
-
-            System.out.println("Logging out " + username);
 
             String logoffString = "LOGOFF " + username;
             byte[] buffer = logoffString.getBytes();
             DatagramPacket logoffPacket = new DatagramPacket(buffer, buffer.length, addr);
             socket.send(logoffPacket);
-
-            System.out.println(username + " logged out");
 
             socket.close();
 
@@ -131,12 +121,11 @@ public class ChatBot implements Runnable {
         @Override
         public void run() {
             while (isRunning) {
-                String output = "MESSAGE This is a message from bot " + id;
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                String output = "MESSAGE " + username + " " + timestamp + " " + "This is a message from " + username;
                 byte[] buffer = output.getBytes();
-                for (HashMap.Entry<String, Integer> pair : peers.entrySet()) {
-                    System.out.println(username + " sending message to " + pair.getKey() + ":" + pair.getValue());
-                    InetSocketAddress peerAddr = new InetSocketAddress(pair.getKey(), pair.getValue());
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, peerAddr);
+                for (ConcurrentHashMap.Entry<InetSocketAddress, Integer> pair : peers.entrySet()) {
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length, pair.getKey());
                     try {
                         socket.send(packet);
                     } catch (IOException e) {
@@ -178,7 +167,7 @@ public class ChatBot implements Runnable {
         ArrayList<ChatBot> userArray = new ArrayList<>();
 
         for (int i = 0; i < numClients; i++) {
-            ChatBot bot = new ChatBot(ip, port, i+2);
+            ChatBot bot = new ChatBot(ip, port, i+1);
             userArray.add(bot);
             new Thread(bot).start();
             try {
