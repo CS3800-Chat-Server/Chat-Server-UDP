@@ -7,6 +7,7 @@ package src.main.java.model;
 import java.net.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -15,7 +16,7 @@ import java.util.*;
 public class Tracker {
     private int port;
     private DatagramSocket socket;
-    private static Map<String, InetSocketAddress> peers = new HashMap<>();
+    private static ConcurrentHashMap<String, InetSocketAddress> peers = new ConcurrentHashMap<>();
 
     public Tracker(int port) {
         this.port = port;
@@ -76,7 +77,7 @@ public class Tracker {
                 String currentUser = "LOGOFF " + tokens[1] + " " + address.getAddress().getHostAddress().split("/")[0]
                         + ":" + address.getPort();
                 byte[] buff = currentUser.getBytes();
-                for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
+                for (ConcurrentHashMap.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
                     DatagramPacket packet = new DatagramPacket(buff, buff.length, pair.getValue());
                     socket.send(packet);
                 }
