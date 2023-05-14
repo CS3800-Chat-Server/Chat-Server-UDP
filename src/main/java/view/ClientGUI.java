@@ -150,6 +150,8 @@ public class ClientGUI extends javax.swing.JFrame {
 
     public void addMessage(String message) {
         chatLog.add(message);
+        int lastIndex = chatLog.getItemCount() - 1;
+        chatLog.makeVisible(lastIndex);
     }
 
     public void close() {
