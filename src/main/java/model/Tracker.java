@@ -16,7 +16,6 @@ public class Tracker {
     private int port;
     private DatagramSocket socket;
     private static Map<String, InetSocketAddress> peers = new HashMap<>();
-    private String response;
 
     public Tracker(int port) {
         this.port = port;
@@ -32,9 +31,6 @@ public class Tracker {
                 byte[] buffer = new byte[1024];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
-
-                // System.out.println("User connecting - " +
-                // packet.getAddress().getHostAddress().split("/")[0] + " "+ packet.getPort());
 
                 InetSocketAddress peerAddr = new InetSocketAddress(packet.getAddress(), packet.getPort());
                 String message = new String(packet.getData(), 0, packet.getLength());
@@ -65,8 +61,6 @@ public class Tracker {
                 byte[] buff2 = currentUser.getBytes();
 
                 for (Map.Entry<String, InetSocketAddress> pair : peers.entrySet()) {
-                    System.out.println("Sending " + currentUser + " to "
-                            + pair.getValue().getAddress().getHostAddress() + ":" + pair.getValue().getPort());
                     packet = new DatagramPacket(buff2, buff2.length, pair.getValue());
                     socket.send(packet);
                 }
