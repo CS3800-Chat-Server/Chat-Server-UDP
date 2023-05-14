@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  *
- * @author Squee183
+ * @authors Alex Rodriguez, Mohammed Ibrahim, Christopher Gomez, Gaia Dennision
  */
 public class ChatClient {
 

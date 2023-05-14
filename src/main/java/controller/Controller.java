@@ -4,6 +4,11 @@ import src.main.java.model.ChatClient;
 import src.main.java.view.ClientGUI;
 import src.main.java.view.LoginGUI;
 
+
+/**
+ *
+ * @authors Alex Rodriguez, Mohammed Ibrahim, Christopher Gomez, Gaia Dennision
+ */
 public class Controller {
     private ChatClient model;
     private LoginGUI viewLogin;

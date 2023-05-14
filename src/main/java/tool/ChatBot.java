@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  *
- * @author Squee183
+ * @authors Alex Rodriguez, Mohammed Ibrahim, Christopher Gomez, Gaia Dennision
  */
 public class ChatBot implements Runnable {
     private static HashMap<String, Integer> peers = new HashMap<String, Integer>();
