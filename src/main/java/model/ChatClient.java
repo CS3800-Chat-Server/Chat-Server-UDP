@@ -6,10 +6,8 @@ package src.main.java.model;
 
 import src.main.java.controller.*;
 
-import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.net.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -71,7 +69,6 @@ public class ChatClient {
     }
 
     public void tryLoginInfo(String username, String ip, Integer port) throws Exception {
-        System.out.println("Trying to login");
         InetAddress clientAddress = InetAddress.getLocalHost();
         trackerAddress = new InetSocketAddress(ip, port);
         try {
@@ -81,11 +78,9 @@ public class ChatClient {
                     trackerAddress);
             socket.send(logonPacket);
         } catch (IOException e) {
-            System.out.println("Error logging into server. ");
             throw e;
         }
 
-        System.out.println("Receiving user list");
         byte[] buffer = new byte[1024];
         DatagramPacket loginResponsePacket = new DatagramPacket(buffer, buffer.length);
         socket.receive(loginResponsePacket);
@@ -94,7 +89,6 @@ public class ChatClient {
 
         if (parts[0].equals("USERS")) {
             for (int i = 1; i < parts.length; i++) {
-                System.out.println("Parts[" + i + "] = " + parts[i] );
                 String[] peersInfo = parts[i].split(":");
                 String clientAddressString = peersInfo[0];
                 int clientPort = Integer.parseInt(peersInfo[i]);
@@ -102,11 +96,9 @@ public class ChatClient {
                         || clientPort != socket.getLocalPort()) {
                     InetAddress address = InetAddress.getByName(clientAddressString);
                     activeClients.put(address, clientPort);
-                    System.out.println(i + " Adding client: " + address + ":" + clientPort);
                 }
             }
         } else {
-            System.out.println("Login user response error. ");
             throw new Exception();
         }
 
@@ -116,7 +108,7 @@ public class ChatClient {
 
     public void sendMessage(String message) {
         // handle logoff if client types exit
-        if (message.equals(".")) {
+        if (message.equals(".") && isRunning) {
             String logoffMessage = "LOGOFF " + username;
             DatagramPacket logoffPacket = new DatagramPacket(logoffMessage.getBytes(), logoffMessage.getBytes().length,
                     trackerAddress);
@@ -129,23 +121,24 @@ public class ChatClient {
 
             isRunning = false;
             return;
-        }
-
-        // send message to peers in activeClients
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        String formattedMessage = "MESSAGE " + username + " " + timestamp + " " + message;
-        for (InetAddress address : activeClients.keySet()) {
-            int port = activeClients.get(address);
-            DatagramPacket sendPacket = new DatagramPacket(formattedMessage.getBytes(),
-                    formattedMessage.getBytes().length, address, port);
-            try {
-                socket.send(sendPacket);
-            } catch (IOException e) {
-                e.printStackTrace();
+        } else if (isRunning) {
+            // send message to peers in activeClients
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            String formattedMessage = "MESSAGE " + username + " " + timestamp + " " + message;
+            for (InetAddress address : activeClients.keySet()) {
+                int port = activeClients.get(address);
+                DatagramPacket sendPacket = new DatagramPacket(formattedMessage.getBytes(),
+                        formattedMessage.getBytes().length, address, port);
+                try {
+                    socket.send(sendPacket);
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
             }
-        }
 
-        clientController.handleMessageReceived(username + " " + timestamp + " " + message);
+            clientController.handleMessageReceived(username + " " + timestamp + " " + message);
+        }   
     }
 
     private class ListenerThread implements Runnable {
@@ -155,7 +148,7 @@ public class ChatClient {
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
             try {
-                while (true) {
+                while (isRunning) {
                     // receive packets
                     socket.receive(packet);
                     String message = new String(packet.getData(), 0, packet.getLength());
@@ -176,7 +169,6 @@ public class ChatClient {
                         } else {
                             activeClients.put(address, clientPort);
                             clientController.handleMessageReceived(name + " joined the chat.");
-                            //System.out.println("Added client: " + address + ":" + clientPort);
                         }
 
                     }
@@ -191,14 +183,12 @@ public class ChatClient {
                         } else {
                             activeClients.remove(address);
                             clientController.handleMessageReceived(name + " left the chat.");
-                            //System.out.println("Removed client: " + address);
                         }
                     }
 
                     // display message from other peers
                     else if (header.equals("MESSAGE")) {
                         clientController.handleMessageReceived(name + ": " + body);
-                        System.out.println(name + ": " + body);
                     }
 
                     // reset the buffer and packet
@@ -207,7 +197,6 @@ public class ChatClient {
                 }
 
             } catch (IOException e) {
-                System.err.println("Error while listening for updates " + e.getMessage());
                 isRunning = false;
             }
 
